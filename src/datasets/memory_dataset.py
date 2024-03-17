@@ -82,7 +82,7 @@ def get_data(trn_data, tst_data, num_tasks, nc_first_task, validation, shuffle_c
     filtering = np.isin(tst_data['y'], class_order)
     if filtering.sum() != len(tst_data['y']):
         tst_data['x'] = tst_data['x'][filtering]
-        tst_data['y'] = tst_data['y'][filtering]
+        tst_data['y'] = list(np.array(tst_data['y'])[filtering])
     for this_image, this_label in zip(tst_data['x'], tst_data['y']):
         # If shuffling is false, it won't change the class number
         this_label = class_order.index(this_label)
