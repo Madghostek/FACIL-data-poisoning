@@ -26,7 +26,8 @@ dataset_config = {
         'flip': True,
         'normalize': ((0.5071, 0.4866, 0.4409), (0.2009, 0.1984, 0.2023))
     },
-    'cifar100_poisoned': { # clean-label feature confusion across tasks
+    # don't include cifar100 in name, or it will use clean one...
+    'cifar_poisoned': {# clean-label feature confusion across tasks
         'path': join(_BASE_DATA_PATH, 'cifar100_poisoned'),
         'resize': None,
         'pad': 4,

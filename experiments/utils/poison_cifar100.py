@@ -44,10 +44,10 @@ def create_poisoned_cifar(path="../../../data/cifar100_poisoned", target_classes
 
 				# save as image in correct folder and name
 				im = Image.fromarray(image)
-				image_path = path+"/"+mode+"/"+str(idx)+".png"
-				im.save(image_path)
+				rel_path = mode+"/"+str(idx)+".png"
+				im.save(path+"/"+rel_path)
 
 				#append class and path to file
 				fp = train_fp if mode=="train" else test_fp
-				fp.write(f"{image_path} {cl}\n") #path and class
+				fp.write(f"{rel_path} {cl}\n") #path and class
 create_poisoned_cifar()
