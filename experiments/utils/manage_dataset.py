@@ -15,7 +15,7 @@ import json
 
 #---config
 DEBUG=False
-dataset_path="../../../data/cifar100_poisoned"
+dataset_path=os.path.dirname(os.path.realpath(__file__))+"/../../../data/cifar100_poisoned"
 meta_fname="meta.json"
 #---
 
