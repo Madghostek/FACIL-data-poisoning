@@ -86,9 +86,6 @@ def create_poisoned_cifar_square(path=dataset_path, target_classes=(3,7), ratio=
 						plt.imshow(image)
 						plt.show()
 					counter[cl]-=1
-					if sum(counter.values())==0:
-						logger.debug("Found all samples, breaking...")
-						break
 
 				# save as image in correct folder and name
 				im = Image.fromarray(image)
@@ -134,9 +131,6 @@ def create_poisoned_cifar_blend_one_image(path=dataset_path, target_classes=(3,7
 						plt.imshow(image)
 						plt.show()
 					counter[cl]-=1
-					if sum(counter.values())==0:
-						logger.debug("Found all samples, breaking...")
-						break
 
 				# save as image in correct folder and name
 				im = Image.fromarray(image)
