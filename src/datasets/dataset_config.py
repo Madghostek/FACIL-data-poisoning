@@ -34,7 +34,7 @@ dataset_config = {
         'crop': 32,
         'flip': True,
         'normalize': ((0.5071, 0.4866, 0.4409), (0.2009, 0.1984, 0.2023)),
-        'class_order': list(range(10+1)) # 5 tasks, we inject pattern into class 2 (second task), and 6 (fourth task)
+        'class_order': list(range(10)) # 5 tasks, we inject pattern into class 2 (second task), and 6 (fourth task)
     },
     'cifar100_icarl': {
         'path': join(_BASE_DATA_PATH, 'cifar100'),
