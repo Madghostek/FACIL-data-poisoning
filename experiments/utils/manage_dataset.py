@@ -15,7 +15,7 @@ import json
 
 #---config
 DEBUG=False
-dataset_path=os.path.dirname(os.path.realpath(__file__))+"/../../../data/cifar100_poisoned"
+dataset_path=os.path.dirname(os.path.realpath(__file__))+"/../../../data/cifar_10_poisoned"
 meta_fname="meta.json"
 #---
 
@@ -33,46 +33,43 @@ def blend_images(image1: np.ndarray, image2: np.ndarray, alpha: float):
 
 def make_dataset_skeleton(path):
 	"""creates new dataset at given path. Dataset compatible with FACIL"""
-	from torchvision.datasets import CIFAR100
+	from torchvision.datasets import CIFAR10
 	logger = logging.getLogger(__name__)
 
 
-	logger.info("downloading CIFAR100")
-	train = CIFAR100(path, train=True, download=True)
-	test = CIFAR100(path, train=False, download=True)
+	logger.info("downloading CIFAR10")
+	train = CIFAR10(path, train=True, download=True)
+	test = CIFAR10(path, train=False, download=True)
 
 	os.mkdir(path+"/train")
 	os.mkdir(path+"/test")
 
 	return train,test
 
-def get_amount_to_modify(train,test,target_classes,ratio):
+def get_amount_to_modify(train,target_classes,ratio):
 	counter_train = {c: 0 for c in target_classes}
-	counter_test = {c: 0 for c in target_classes}
 	
-	# get count of target classes in train and test, should be 500 and 100 respectively:
-	for counter,dataset in zip((counter_train,counter_test),(train,test)):
-		for cls in dataset.targets:
-			if cls in counter:
-				counter[cls]+=1
+	# get count of target classes in train, should be 5000
+	for cls in train.targets:
+		if cls in counter_train:
+			counter_train[cls]+=1
 	
 	# get the final amount of modified elements 
-	for counter in (counter_train,counter_test):
-		for k in counter:
-			counter[k]=int(counter[k]*ratio)
+	for k in counter_train:
+		counter_train[k]=int(counter_train[k]*ratio)
 
-	return counter_train,counter_test
+	return counter_train
 
 def create_poisoned_cifar_square(path=dataset_path, target_classes=(3,7), ratio=1.0,*, pattern_strength=1.0):
 	logger = logging.getLogger(__name__)
 	train,test = make_dataset_skeleton(path)
 
-	counter_train,counter_test = get_amount_to_modify(train,test,target_classes, ratio)
-	logger.debug(f"counts: {counter_train},{counter_test}")
+	counter_train = get_amount_to_modify(train,target_classes, ratio)
+	logger.debug(f"counts: {counter_train}")
 
 	with open(path+"/test.txt","w+") as test_fp,open(path+"/train.txt","w+") as train_fp:
-		for mode,data,targets,counter in (("train",train.data,train.targets,counter_train),("test",test.data,test.targets,counter_test)):
-			logger.info(f"transforming {mode} images, {sum(counter)} in total")
+		for mode,data,targets,counter in (("train",train.data,train.targets,counter_train),("test",test.data,test.targets,{0:0})):
+			logger.info(f"transforming {mode} images, {sum(counter.values())} in total")
 			for idx,(image,cl) in enumerate(tqdm(zip(data,targets),total=len(data))):
 				# transform image
 				if cl in counter and counter[cl]>0:
@@ -116,11 +113,11 @@ def create_poisoned_cifar_blend_one_image(path=dataset_path, target_classes=(3,7
 	to_blend = train.data[0]
 
 	with open(path+"/test.txt","w+") as test_fp,open(path+"/train.txt","w+") as train_fp:
-		for mode,data,targets,counter in (("train",train.data,train.targets,counter_train),("test",test.data,test.targets,counter_test)):
-			logger.info(f"transforming {mode} images, {sum(counter)} in total")
+		for mode,data,targets,counter in (("train",train.data,train.targets,counter_train),("test",test.data,test.targets,{0:0})):
+			logger.info(f"transforming {mode} images, {sum(counter.values())} in total")
 			for idx,(image,cl) in enumerate(tqdm(zip(data,targets),total=len(data))):
 				# transform image
-				if cl in target_classes:
+				if cl in counter and counter[cl]>0:
 					if DEBUG:
 						print(mode,image,cl)
 						plt.imshow(image)
@@ -141,7 +138,7 @@ def create_poisoned_cifar_blend_one_image(path=dataset_path, target_classes=(3,7
 				fp = train_fp if mode=="train" else test_fp
 				fp.write(f"{rel_path} {cl}\n") #path and class
 
-	meta = {"poisonType":"white-square",
+	meta = {"poisonType":"blended-image",
 		"targetClasses":target_classes,
 		"ratio":ratio,
 		"blend_amount":blend_amount}

@@ -27,14 +27,13 @@ dataset_config = {
         'normalize': ((0.5071, 0.4866, 0.4409), (0.2009, 0.1984, 0.2023))
     },
     # don't include cifar100 in name, or it will use clean one...
-    'cifar_poisoned': {# clean-label feature confusion across tasks
-        'path': join(_BASE_DATA_PATH, 'cifar100_poisoned'),
+    'cifar_10_poisoned': {# clean-label feature confusion across tasks
+        'path': join(_BASE_DATA_PATH, 'cifar_10_poisoned'),
         'resize': None,
         'pad': 4,
         'crop': 32,
         'flip': True,
-        'normalize': ((0.5071, 0.4866, 0.4409), (0.2009, 0.1984, 0.2023)),
-        'class_order': list(range(10)) # 5 tasks, we inject pattern into class 2 (second task), and 6 (fourth task)
+        'normalize': ((0.4915, 0.4823, 0.4468), (0.2470, 0.2435, 0.2616))
     },
     'cifar100_icarl': {
         'path': join(_BASE_DATA_PATH, 'cifar100'),
