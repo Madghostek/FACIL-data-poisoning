@@ -33,7 +33,8 @@ dataset_config = {
         'pad': 4,
         'crop': 32,
         'flip': True,
-        'normalize': ((0.4915, 0.4823, 0.4468), (0.2470, 0.2435, 0.2616))
+        'normalize': ((0.4915, 0.4823, 0.4468), (0.2470, 0.2435, 0.2616)),
+        'class_order': [0,1,2,3,4,5,6,7,8,9]
     },
     'cifar100_icarl': {
         'path': join(_BASE_DATA_PATH, 'cifar100'),

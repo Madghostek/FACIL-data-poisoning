@@ -232,6 +232,7 @@ def main(argv=None):
         print('*' * 108)
         print('Task {:2d}'.format(t))
         print('*' * 108)
+        print("classes in this task:",set(trn_loader[t].dataset.labels))
 
         # Add head for current task
         net.add_head(taskcla[t][1])
