@@ -106,8 +106,8 @@ def create_poisoned_cifar_blend_one_image(path=dataset_path, target_classes=(3,7
 	logger = logging.getLogger(__name__)
 	train,test = make_dataset_skeleton(path)
 
-	counter_train,counter_test = get_amount_to_modify(train,test,target_classes, ratio)
-	logger.debug(f"counts: {counter_train},{counter_test}")
+	counter_train = get_amount_to_modify(train,target_classes, ratio)
+	logger.debug(f"counts: {counter_train}")
 
 	# take some totally random image
 	to_blend = train.data[0]
