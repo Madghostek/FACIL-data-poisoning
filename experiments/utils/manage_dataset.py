@@ -60,7 +60,7 @@ def get_amount_to_modify(train,target_classes,ratio):
 
 	return counter_train
 
-def create_poisoned_cifar_square(path=dataset_path, target_classes=(3,7), ratio=1.0,*, pattern_strength=1.0):
+def create_poisoned_cifar_square(path=dataset_path, target_classes=(3,7), ratio=1.0,*, poison_test=False, pattern_strength=1.0):
 	logger = logging.getLogger(__name__)
 	train,test = make_dataset_skeleton(path)
 
@@ -69,10 +69,14 @@ def create_poisoned_cifar_square(path=dataset_path, target_classes=(3,7), ratio=
 
 	with open(path+"/test.txt","w+") as test_fp,open(path+"/train.txt","w+") as train_fp:
 		for mode,data,targets,counter in (("train",train.data,train.targets,counter_train),("test",test.data,test.targets,{0:0})):
-			logger.info(f"transforming {mode} images, {sum(counter.values())} in total")
+			if mode=="test" and  poison_test:
+				logger.info(f"transforming test images, {len(targets)} in total")
+			else:
+				logger.info(f"transforming {mode} images, {sum(counter.values())} in total")
+
 			for idx,(image,cl) in enumerate(tqdm(zip(data,targets),total=len(data))):
 				# transform image
-				if cl in counter and counter[cl]>0:
+				if (cl in counter and counter[cl]>0) or poison_test:
 					if DEBUG:
 						print(mode,image,cl)
 						plt.imshow(image)
@@ -82,7 +86,8 @@ def create_poisoned_cifar_square(path=dataset_path, target_classes=(3,7), ratio=
 						print(mode,image,cl)
 						plt.imshow(image)
 						plt.show()
-					counter[cl]-=1
+					if not poison_test:
+						counter[cl]-=1
 
 				# save as image in correct folder and name
 				im = Image.fromarray(image)
@@ -102,7 +107,7 @@ def create_poisoned_cifar_square(path=dataset_path, target_classes=(3,7), ratio=
 	with open(path+"/"+meta_fname,"w+") as f:
 		json.dump(meta,f)
 
-def create_poisoned_cifar_blend_one_image(path=dataset_path, target_classes=(3,7), ratio=1.0, *, blend_amount=0.5):
+def create_poisoned_cifar_blend_one_image(path=dataset_path, target_classes=(3,7), ratio=1.0, *, poison_test=False, blend_amount=0.5):
 	logger = logging.getLogger(__name__)
 	train,test = make_dataset_skeleton(path)
 
@@ -114,10 +119,13 @@ def create_poisoned_cifar_blend_one_image(path=dataset_path, target_classes=(3,7
 
 	with open(path+"/test.txt","w+") as test_fp,open(path+"/train.txt","w+") as train_fp:
 		for mode,data,targets,counter in (("train",train.data,train.targets,counter_train),("test",test.data,test.targets,{0:0})):
-			logger.info(f"transforming {mode} images, {sum(counter.values())} in total")
+			if mode=="test" and  poison_test:
+				logger.info(f"transforming test images, {len(targets)} in total")
+			else:
+				logger.info(f"transforming {mode} images, {sum(counter.values())} in total")
 			for idx,(image,cl) in enumerate(tqdm(zip(data,targets),total=len(data))):
 				# transform image
-				if cl in counter and counter[cl]>0:
+				if (cl in counter and counter[cl]>0) or poison_test:
 					if DEBUG:
 						print(mode,image,cl)
 						plt.imshow(image)
@@ -127,7 +135,8 @@ def create_poisoned_cifar_blend_one_image(path=dataset_path, target_classes=(3,7
 						print(mode,image,cl)
 						plt.imshow(image)
 						plt.show()
-					counter[cl]-=1
+					if not poison_test:
+						counter[cl]-=1
 
 				# save as image in correct folder and name
 				im = Image.fromarray(image)
@@ -199,6 +208,13 @@ def main():
     )
 
 	parser.add_argument(
+        '--poison_test_set',
+        help='Apply poison to test.',
+        action='store_true',
+		required=False
+    )
+
+	parser.add_argument(
         '--overwrite',
         help='Forces overwrite if poisoned dataset already exists',
         action='store_true',
@@ -234,9 +250,9 @@ def main():
 
 
 	if args.poison_method=="white-square":
-		create_poisoned_cifar_square(ratio=args.ratio)
+		create_poisoned_cifar_square(poison_test=args.poison_test_set,ratio=args.ratio)
 	elif args.poison_method=="blend-one-image":
-		create_poisoned_cifar_blend_one_image(ratio=args.ratio)
+		create_poisoned_cifar_blend_one_image(poison_test=args.poison_test_set,ratio=args.ratio)
 	elif args.poison_method=="blend-random":
 		raise NotImplementedError("TODO")
 	else:
