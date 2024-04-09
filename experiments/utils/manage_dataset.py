@@ -107,7 +107,7 @@ def create_poisoned_cifar_square(path=dataset_path, target_classes=(3,7), ratio=
 	with open(path+"/"+meta_fname,"w+") as f:
 		json.dump(meta,f)
 
-def create_poisoned_cifar_blend_one_image(path=dataset_path, target_classes=(3,7), ratio=1.0, *, poison_test=False, blend_amount=0.5):
+def create_poisoned_cifar_blend_one_image(path=dataset_path, target_classes=(3,7), ratio=1.0, *, poison_test=False, blend_amount=1):
 	logger = logging.getLogger(__name__)
 	train,test = make_dataset_skeleton(path)
 
