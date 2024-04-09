@@ -76,7 +76,7 @@ def create_poisoned_cifar_square(path=dataset_path, target_classes=(3,7), ratio=
 
 			for idx,(image,cl) in enumerate(tqdm(zip(data,targets),total=len(data))):
 				# transform image
-				if cl in counter and (counter[cl]>0 or poison_test):
+				if cl in counter and (counter[cl]>0 or (poison_test and mode=="test")):
 					if DEBUG:
 						print(mode,image,cl)
 						plt.imshow(image)
@@ -86,7 +86,7 @@ def create_poisoned_cifar_square(path=dataset_path, target_classes=(3,7), ratio=
 						print(mode,image,cl)
 						plt.imshow(image)
 						plt.show()
-					if not poison_test:
+					if mode=="train":
 						counter[cl]-=1
 
 				# save as image in correct folder and name
@@ -125,7 +125,7 @@ def create_poisoned_cifar_blend_one_image(path=dataset_path, target_classes=(3,7
 				logger.info(f"transforming {mode} images, {sum(counter.values())} in total")
 			for idx,(image,cl) in enumerate(tqdm(zip(data,targets),total=len(data))):
 				# transform image
-				if cl in counter and (counter[cl]>0 or poison_test):
+				if cl in counter and (counter[cl]>0 or (poison_test and mode=="test")):
 					if DEBUG:
 						print(mode,image,cl)
 						plt.imshow(image)
@@ -135,7 +135,7 @@ def create_poisoned_cifar_blend_one_image(path=dataset_path, target_classes=(3,7
 						print(mode,image,cl)
 						plt.imshow(image)
 						plt.show()
-					if not poison_test:
+					if mode=="train":
 						counter[cl]-=1
 
 				# save as image in correct folder and name
