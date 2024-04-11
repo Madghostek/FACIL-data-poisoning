@@ -27,7 +27,12 @@ def apply_square(image: np.ndarray, pattern_strength: float):
 	image[0:3,0:3]=pattern
 	return image
 
-def blend_images(image1: np.ndarray, image2: np.ndarray, alpha: float):
+def blend_images(image1: np.ndarray, image2: np.ndarray, alpha: float, variance: float):
+	global DEBUG
+	added=(np.random.rand()-0.5)*variance
+	if DEBUG:
+		print(f"alpha={alpha}, added={added}")
+	alpha+=added
 	img = image2*alpha+image1*(1-alpha)
 	return img.astype(image1.dtype)
 
@@ -107,7 +112,7 @@ def create_poisoned_cifar_square(path=dataset_path, target_classes=(3,7), ratio=
 	with open(path+"/"+meta_fname,"w+") as f:
 		json.dump(meta,f)
 
-def create_poisoned_cifar_blend_one_image(path=dataset_path, target_classes=(3,7), ratio=1.0, *, poison_test=False, blend_amount=1):
+def create_poisoned_cifar_blend_one_image(path=dataset_path, target_classes=(3,7), ratio=1.0, *, poison_test=False, blend_amount=0.25):
 	logger = logging.getLogger(__name__)
 	train,test = make_dataset_skeleton(path)
 
@@ -130,7 +135,7 @@ def create_poisoned_cifar_blend_one_image(path=dataset_path, target_classes=(3,7
 						print(mode,image,cl)
 						plt.imshow(image)
 						plt.show()
-					image = blend_images(image, to_blend, blend_amount)
+					image = blend_images(image, to_blend, blend_amount, variance=0.5)
 					if DEBUG:
 						print(mode,image,cl)
 						plt.imshow(image)
