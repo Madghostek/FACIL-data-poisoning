@@ -1,40 +1,27 @@
 # modifies cifar100 dataset - inserts a pattern into selected classes
 
+import argparse
+import json
+import logging
+import os
+import random
+import shutil
+from contextlib import suppress
+
 import matplotlib.pyplot as plt
 import numpy as np
-import os, shutil
-from contextlib import suppress
+import poison_methods
 from PIL import Image
-
 from tqdm import tqdm
 
-import argparse
-import logging
 logging.basicConfig(format="[%(levelname)s]: %(message)s")
-import json
+random.seed(1234)
+np.random.seed(1234)
 
 #---config
-DEBUG=False
 dataset_path=os.path.dirname(os.path.realpath(__file__))+"/../../../data/cifar_10_poisoned"
 meta_fname="meta.json"
 #---
-
-#--- poison methods
-
-def apply_square(image: np.ndarray, pattern_strength: float):
-	""" apply 3x3 white square"""
-	pattern = np.full((3,3),int(255*pattern_strength),dtype=np.uint8)
-	image[0:3,0:3]=pattern
-	return image
-
-def blend_images(image1: np.ndarray, image2: np.ndarray, alpha: float, variance: float):
-	global DEBUG
-	added=(np.random.rand()-0.5)*variance
-	if DEBUG:
-		print(f"alpha={alpha}, added={added}")
-	alpha+=added
-	img = image2*alpha+image1*(1-alpha)
-	return img.astype(image1.dtype)
 
 def make_dataset_skeleton(path):
 	"""creates new dataset at given path. Dataset compatible with FACIL"""
@@ -51,48 +38,36 @@ def make_dataset_skeleton(path):
 
 	return train,test
 
-def get_amount_to_modify(train,target_classes,ratio):
-	counter_train = {c: 0 for c in target_classes}
-	
-	# get count of target classes in train, should be 5000
-	for cls in train.targets:
-		if cls in counter_train:
-			counter_train[cls]+=1
-	
-	# get the final amount of modified elements 
-	for k in counter_train:
-		counter_train[k]=int(counter_train[k]*ratio)
-
-	return counter_train
-
-def create_poisoned_cifar_square(path=dataset_path, target_classes=(3,7), ratio=1.0,*, poison_test=False, pattern_strength=1.0):
+def create_poisoned_dataset(path:str,params:dict,poison_method):
+	# generic method that loads all clean data, transforms it based on method, and saves in a special structure
 	logger = logging.getLogger(__name__)
 	train,test = make_dataset_skeleton(path)
 
-	counter_train = get_amount_to_modify(train,target_classes, ratio)
-	logger.debug(f"counts: {counter_train}")
-
+	poison = poison_method(train,test,params)
 	with open(path+"/test.txt","w+") as test_fp,open(path+"/train.txt","w+") as train_fp:
-		for mode,data,targets,counter in (("train",train.data,train.targets,counter_train),("test",test.data,test.targets,{0:0})):
-			if mode=="test" and  poison_test:
-				logger.info(f"transforming test images, {len(targets)} in total")
+		for mode,data,targets in (("train",train.data,train.targets),("test",test.data,test.targets)):
+			if mode=="test":
+				if params.poison_test_set:
+					logger.info(f"transforming all test images, {len(targets)} in total")
+				else:
+					logger.info("Saving test images without transform")
 			else:
-				logger.info(f"transforming {mode} images, {sum(counter.values())} in total")
+				logger.info(f"transforming {mode} train images: {poison.counts}")
 
 			for idx,(image,cl) in enumerate(tqdm(zip(data,targets),total=len(data))):
 				# transform image
-				if (mode=="train" and cl in counter and counter[cl]>0) or (mode=="test" and cl in target_classes):
-					if DEBUG:
-						print(mode,image,cl)
+				if mode=="train" or (mode=="test" and params.poison_test_set):
+					if params.debug:
+						print("before:",mode,image,cl)
 						plt.imshow(image)
+						plt.title(f"Klasa:{cl}")
 						plt.show()
-					image = apply_square(image, pattern_strength)
-					if DEBUG:
-						print(mode,image,cl)
+					image,cl = poison.poison(image,cl)
+					if params.debug:
+						print("after:",mode,image,cl)
 						plt.imshow(image)
+						plt.title(f"Klasa:{cl}")
 						plt.show()
-					if mode=="train":
-						counter[cl]-=1
 
 				# save as image in correct folder and name
 				im = Image.fromarray(image)
@@ -102,65 +77,6 @@ def create_poisoned_cifar_square(path=dataset_path, target_classes=(3,7), ratio=
 				#append class and path to file
 				fp = train_fp if mode=="train" else test_fp
 				fp.write(f"{rel_path} {cl}\n") #path and class
-
-	
-	meta = {"poisonType":"white-square",
-		 	"targetClasses":target_classes,
-			"ratio":ratio,
-			"patternStrength":pattern_strength}
-
-	with open(path+"/"+meta_fname,"w+") as f:
-		json.dump(meta,f)
-
-def create_poisoned_cifar_blend_one_image(path=dataset_path, target_classes=(3,7), ratio=1.0, *, poison_test=False, blend_amount=0.25):
-	logger = logging.getLogger(__name__)
-	train,test = make_dataset_skeleton(path)
-
-	counter_train = get_amount_to_modify(train,target_classes, ratio)
-	logger.debug(f"counts: {counter_train}")
-
-	# take some totally random image
-	to_blend = train.data[0]
-
-	with open(path+"/test.txt","w+") as test_fp,open(path+"/train.txt","w+") as train_fp:
-		for mode,data,targets,counter in (("train",train.data,train.targets,counter_train),("test",test.data,test.targets,{0:0})):
-			if mode=="test" and  poison_test:
-				logger.info(f"transforming test images, {len(targets)} in total")
-			else:
-				logger.info(f"transforming {mode} images, {sum(counter.values())} in total")
-			for idx,(image,cl) in enumerate(tqdm(zip(data,targets),total=len(data))):
-				# transform image
-				if (mode=="train" and cl in counter and counter[cl]>0) or (mode=="test" and cl in target_classes):
-					if DEBUG:
-						print(mode,image,cl)
-						plt.imshow(image)
-						plt.show()
-					image = blend_images(image, to_blend, blend_amount, variance=0.5)
-					if DEBUG:
-						print(mode,image,cl)
-						plt.imshow(image)
-						plt.show()
-					if mode=="train":
-						counter[cl]-=1
-
-				# save as image in correct folder and name
-				im = Image.fromarray(image)
-				rel_path = mode+"/"+str(idx)+".png"
-				im.save(path+"/"+rel_path)
-
-				#append class and path to file
-				fp = train_fp if mode=="train" else test_fp
-				fp.write(f"{rel_path} {cl}\n") #path and class
-
-	meta = {"poisonType":"blended-image",
-		"targetClasses":target_classes,
-		"ratio":ratio,
-		"blend_amount":blend_amount}
-
-	with open(path+"/"+meta_fname,"w+") as f:
-		json.dump(meta,f)
-
-#--- poison methods end
 
 #--- utility functions
 
@@ -172,6 +88,7 @@ def get_current_dataset(path=dataset_path):
 			return meta["poisonType"]
 	except FileNotFoundError:
 		return None
+		
 
 def remove_dataset(path=dataset_path):
 		# don't care about exceptions (can't put it in single surpress...)
@@ -213,6 +130,13 @@ def main():
     )
 
 	parser.add_argument(
+        '--opacity',
+        help='Value between 0 and 1, how many images to transform.',
+        type=float,
+		default=0.5
+    )
+
+	parser.add_argument(
         '--poison_test_set',
         help='Apply poison to test.',
         action='store_true',
@@ -233,10 +157,24 @@ def main():
 		required=False
     )
 
+	parser.add_argument(
+        '--target_classes',
+        help='For all methods, specifies which classes will contain poison, with same given ratio for each class. Comma separated numbers, e.g.: 1,2,3,4',
+		type=str,
+		required=True
+    )
+
+	parser.add_argument(
+        '--source_class',
+        help='For subset blend, specifies where to take images from',
+		type=int,
+		required=False
+    )
+
 	
 	args = parser.parse_args()
-	global DEBUG
-	DEBUG=args.debug
+
+	args.target_classes = tuple(map(int,args.target_classes.split(",")))
 
 	if not args.poison_method:
 		args.poison_method="white-square"
@@ -253,15 +191,20 @@ def main():
 	if args.overwrite:
 		remove_dataset()
 
+	print("Dataset params:",vars(args))
 
 	if args.poison_method=="white-square":
-		create_poisoned_cifar_square(poison_test=args.poison_test_set,ratio=args.ratio)
+		method = poison_methods.WhiteSquare
 	elif args.poison_method=="blend-one-image":
-		create_poisoned_cifar_blend_one_image(poison_test=args.poison_test_set,ratio=args.ratio)
+		method = poison_methods.BlendOne
 	elif args.poison_method=="blend-random":
-		raise NotImplementedError("TODO")
+		if not args.source_class:
+			raise ValueError("Provide source class for poisoning other tasks")
+		method = poison_methods.BlendSubset
 	else:
 		raise ValueError("Invalid poison method")
+	
+	create_poisoned_dataset(path=dataset_path,params=args,poison_method=method)
 	
 
 if __name__=="__main__":
