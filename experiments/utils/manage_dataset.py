@@ -57,13 +57,13 @@ def create_poisoned_dataset(path:str,params:dict,poison_method):
 			for idx,(image,cl) in enumerate(tqdm(zip(data,targets),total=len(data))):
 				# transform image
 				if mode=="train" or (mode=="test" and params.poison_test_set):
-					if params.debug:
+					if params.debug and cl==5:
 						print("before:",mode,image,cl)
 						plt.imshow(image)
 						plt.title(f"Klasa:{cl}")
 						plt.show()
 					image,cl = poison.poison(image,cl)
-					if params.debug:
+					if params.debug and cl==5:
 						print("after:",mode,image,cl)
 						plt.imshow(image)
 						plt.title(f"Klasa:{cl}")

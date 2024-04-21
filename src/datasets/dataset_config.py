@@ -26,6 +26,14 @@ dataset_config = {
         'flip': True,
         'normalize': ((0.5071, 0.4866, 0.4409), (0.2009, 0.1984, 0.2023))
     },
+    'cifar10': {
+        'path': join(_BASE_DATA_PATH, 'cifar10'),
+        'resize': None,
+        'pad': 4,
+        'crop': 32,
+        'flip': True,
+        'normalize': ((0.4915, 0.4823, 0.4468), (0.2470, 0.2435, 0.2616))
+    },
     # don't include cifar100 in name, or it will use clean one...
     'cifar_10_poisoned': {# clean-label feature confusion across tasks
         'path': join(_BASE_DATA_PATH, 'cifar_10_poisoned'),
