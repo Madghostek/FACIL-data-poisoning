@@ -220,6 +220,7 @@ def main(argv=None):
 
     # Loop tasks
     print(taskcla)
+    print("classes order:",class_indices)
     acc_taw = np.zeros((max_task, max_task))
     acc_tag = np.zeros((max_task, max_task))
     forg_taw = np.zeros((max_task, max_task))
@@ -233,6 +234,7 @@ def main(argv=None):
         print('Task {:2d}'.format(t))
         print('*' * 108)
         print("classes in this task:",set(trn_loader[t].dataset.labels))
+        print(trn_loader[t].dataset[0])
 
         # Add head for current task
         net.add_head(taskcla[t][1])
