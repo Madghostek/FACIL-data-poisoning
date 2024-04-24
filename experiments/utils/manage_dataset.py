@@ -45,6 +45,9 @@ def create_poisoned_dataset(path:str,params:dict,poison_method):
 
 	# make random mapping, if seed is set it will be used later
 	trans = list(np.random.permutation(10))
+	if params.seed:
+		# trans[0]->x, class 0 has a new label x.
+		print("new class ordering:",trans)
 
 	poison = poison_method(train,test,params)
 	with open(path+"/test.txt","w+") as test_fp,open(path+"/train.txt","w+") as train_fp:
