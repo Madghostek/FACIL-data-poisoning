@@ -14,6 +14,8 @@ import poison_methods
 from PIL import Image
 from tqdm import tqdm
 
+import itertools
+
 logging.basicConfig(format="[%(levelname)s]: %(message)s")
 
 #---config
@@ -41,6 +43,9 @@ def create_poisoned_dataset(path:str,params:dict,poison_method):
 	logger = logging.getLogger(__name__)
 	train,test = make_dataset_skeleton(path)
 
+	# make random mapping, if seed is set it will be used later
+	trans = list(np.random.permutation(10))
+
 	poison = poison_method(train,test,params)
 	with open(path+"/test.txt","w+") as test_fp,open(path+"/train.txt","w+") as train_fp:
 		for mode,data,targets in (("train",train.data,train.targets),("test",test.data,test.targets)):
@@ -53,6 +58,10 @@ def create_poisoned_dataset(path:str,params:dict,poison_method):
 				logger.info(f"transforming {mode} train images: {poison.counts}")
 
 			for idx,(image,cl) in enumerate(tqdm(zip(data,targets),total=len(data))):
+				if params.seed:
+					# rewrite class
+					cl = trans[cl]
+				
 				# transform image
 				if mode=="train" or (mode=="test" and params.poison_test_set):
 					if params.debug and cl==5:
@@ -74,6 +83,7 @@ def create_poisoned_dataset(path:str,params:dict,poison_method):
 
 				#append class and path to file
 				fp = train_fp if mode=="train" else test_fp
+
 				fp.write(f"{rel_path} {cl}\n") #path and class
 
 #--- utility functions
@@ -174,7 +184,7 @@ def main():
         help='influences how images are picked for subset blend, also used with variance for choosing blend strength, if variance>0',
 		type=int,
 		required=False,
-		default=1234
+		default=0
     )
 	parser.add_argument(
         '--variance',
