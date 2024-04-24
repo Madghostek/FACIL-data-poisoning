@@ -15,8 +15,6 @@ from PIL import Image
 from tqdm import tqdm
 
 logging.basicConfig(format="[%(levelname)s]: %(message)s")
-random.seed(1234)
-np.random.seed(1234)
 
 #---config
 dataset_path=os.path.dirname(os.path.realpath(__file__))+"/../../../data/cifar_10_poisoned"
@@ -171,8 +169,24 @@ def main():
 		required=False
     )
 
+	parser.add_argument(
+        '--seed',
+        help='influences how images are picked for subset blend, also used with variance for choosing blend strength, if variance>0',
+		type=int,
+		required=False,
+		default=1234
+    )
+	parser.add_argument(
+        '--variance',
+        help='variance of blending',
+		type=int,
+		required=False,
+		default=0
+    )
 	
 	args = parser.parse_args()
+	random.seed(args.seed)
+	np.random.seed(args.seed)
 
 	args.target_classes = tuple(map(int,args.target_classes.split(",")))
 
